@@ -3,9 +3,11 @@ import PriorityBadge from "@/components/task/PriorityBadge";
 
 type TaskItemProps = {
   task: Task;
+  onToggleComplete: (id: string) => void;
+  onDelete: (id: string) => void;
 };
 
-export default function TaskItem({ task }: TaskItemProps) {
+export default function TaskItem({ task, onToggleComplete, onDelete }: TaskItemProps) {
   const checkboxId = `task-${task.id}-completed`;
 
   return (
@@ -14,8 +16,7 @@ export default function TaskItem({ task }: TaskItemProps) {
         id={checkboxId}
         type="checkbox"
         checked={task.completed}
-        disabled
-        readOnly
+        onChange={() => onToggleComplete(task.id)}
         className="h-4 w-4 shrink-0 rounded border-gray-300 text-gray-900 focus:ring-gray-300"
       />
       <label htmlFor={checkboxId} className="visually-hidden">
@@ -34,9 +35,9 @@ export default function TaskItem({ task }: TaskItemProps) {
 
       <button
         type="button"
-        disabled
+        onClick={() => onDelete(task.id)}
         aria-label={`Delete "${task.title}"`}
-        className="rounded-md px-2 py-1 text-sm font-medium text-gray-400 disabled:cursor-not-allowed"
+        className="rounded-md px-2 py-1 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
       >
         Delete
       </button>

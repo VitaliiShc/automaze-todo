@@ -1,12 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import TaskSearch from "@/components/task/TaskSearch";
 import TaskFilters from "@/components/task/TaskFilters";
 import TaskSort from "@/components/task/TaskSort";
 import TaskList from "@/components/task/TaskList";
 import TaskForm from "@/components/task/TaskForm";
-import type { Task } from "@/types/task";
+import type { Priority, Task } from "@/types/task";
 
-// Temporary static data for Sprint 2 (static rendering only). Will be replaced by real data fetching in the next sprint.
-const tasks: Task[] = [
+// Seed data for local state. Will be replaced by real data fetching in a future sprint.
+const initialTasks: Task[] = [
   {
     id: "1",
     title: "Set up project repository",
@@ -42,6 +45,36 @@ const tasks: Task[] = [
 ];
 
 export default function Home() {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
+  function handleAddTask(title: string, priority: Priority) {
+    const now = new Date().toISOString();
+    const newTask: Task = {
+      id: crypto.randomUUID(),
+      title,
+      completed: false,
+      priority,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setTasks((currentTasks) => [...currentTasks, newTask]);
+  }
+
+  function handleToggleComplete(id: string) {
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === id
+          ? { ...task, completed: !task.completed, updatedAt: new Date().toISOString() }
+          : task,
+      ),
+    );
+  }
+
+  function handleDeleteTask(id: string) {
+    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== id));
+  }
+
   return (
     <main className="flex flex-1 justify-center bg-gray-50 px-4 py-10 sm:py-16">
       <div className="flex w-full max-w-175 flex-col gap-8">
@@ -60,11 +93,15 @@ export default function Home() {
         </section>
 
         <section aria-label="Tasks">
-          <TaskList tasks={tasks} />
+          <TaskList
+            tasks={tasks}
+            onToggleComplete={handleToggleComplete}
+            onDelete={handleDeleteTask}
+          />
         </section>
 
         <section aria-label="Add a new task">
-          <TaskForm />
+          <TaskForm onAddTask={handleAddTask} />
         </section>
       </div>
     </main>

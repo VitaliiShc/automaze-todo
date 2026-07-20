@@ -3,9 +3,11 @@ import TaskItem from "@/components/task/TaskItem";
 
 type TaskListProps = {
   tasks: Task[];
+  onToggleComplete: (id: string) => void;
+  onDelete: (id: string) => void;
 };
 
-export default function TaskList({ tasks }: TaskListProps) {
+export default function TaskList({ tasks, onToggleComplete, onDelete }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <ul
@@ -22,7 +24,12 @@ export default function TaskList({ tasks }: TaskListProps) {
   return (
     <ul aria-label="Tasks" className="flex flex-col gap-3">
       {tasks.map((task) => (
-        <TaskItem key={task.id} task={task} />
+        <TaskItem
+          key={task.id}
+          task={task}
+          onToggleComplete={onToggleComplete}
+          onDelete={onDelete}
+        />
       ))}
     </ul>
   );
