@@ -1,54 +1,36 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TaskSearch from "@/components/task/TaskSearch";
 import TaskFilters from "@/components/task/TaskFilters";
 import TaskSort from "@/components/task/TaskSort";
 import TaskList from "@/components/task/TaskList";
 import TaskForm from "@/components/task/TaskForm";
+import { createTask, deleteTask, getTasks, updateTask } from "@/lib/api";
 import type { Priority, SortOrder, StatusFilter, Task } from "@/types/task";
 
-// Seed data for local state. Will be replaced by real data fetching in a future sprint.
-const initialTasks: Task[] = [
-  {
-    id: "1",
-    title: "Set up project repository",
-    completed: true,
-    priority: 2,
-    createdAt: "2026-07-18T09:00:00.000Z",
-    updatedAt: "2026-07-18T09:00:00.000Z",
-  },
-  {
-    id: "2",
-    title: "Design database schema",
-    completed: false,
-    priority: 6,
-    createdAt: "2026-07-19T10:30:00.000Z",
-    updatedAt: "2026-07-19T10:30:00.000Z",
-  },
-  {
-    id: "3",
-    title: "Implement authentication",
-    completed: false,
-    priority: 9,
-    createdAt: "2026-07-19T14:15:00.000Z",
-    updatedAt: "2026-07-19T14:15:00.000Z",
-  },
-  {
-    id: "4",
-    title: "Write unit tests",
-    completed: false,
-    priority: 4,
-    createdAt: "2026-07-20T08:00:00.000Z",
-    updatedAt: "2026-07-20T08:00:00.000Z",
-  },
-];
-
 export default function Home() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getTasks()
+      .then((fetchedTasks) => {
+        if (isMounted) setTasks(fetchedTasks);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const visibleTasks = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -67,32 +49,27 @@ export default function Home() {
     );
   }, [tasks, search, statusFilter, sortOrder]);
 
-  function handleAddTask(title: string, priority: Priority) {
-    const now = new Date().toISOString();
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title,
-      completed: false,
-      priority,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    setTasks((currentTasks) => [...currentTasks, newTask]);
+  async function refreshTasks() {
+    const fetchedTasks = await getTasks();
+    setTasks(fetchedTasks);
   }
 
-  function handleToggleComplete(id: string) {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === id
-          ? { ...task, completed: !task.completed, updatedAt: new Date().toISOString() }
-          : task,
-      ),
-    );
+  async function handleAddTask(title: string, priority: Priority) {
+    await createTask(title, priority);
+    await refreshTasks();
   }
 
-  function handleDeleteTask(id: string) {
-    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== id));
+  async function handleToggleComplete(id: string) {
+    const task = tasks.find((currentTask) => currentTask.id === id);
+    if (!task) return;
+
+    await updateTask(id, { completed: !task.completed });
+    await refreshTasks();
+  }
+
+  async function handleDeleteTask(id: string) {
+    await deleteTask(id);
+    await refreshTasks();
   }
 
   return (
@@ -113,11 +90,15 @@ export default function Home() {
         </section>
 
         <section aria-label="Tasks">
-          <TaskList
-            tasks={visibleTasks}
-            onToggleComplete={handleToggleComplete}
-            onDelete={handleDeleteTask}
-          />
+          {isLoading ? (
+            <p className="text-sm text-gray-500">Loading...</p>
+          ) : (
+            <TaskList
+              tasks={visibleTasks}
+              onToggleComplete={handleToggleComplete}
+              onDelete={handleDeleteTask}
+            />
+          )}
         </section>
 
         <section aria-label="Add a new task">
