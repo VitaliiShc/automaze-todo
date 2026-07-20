@@ -91,10 +91,10 @@ Deletes a task.
 
 - [x] Repository created
 - [x] Next.js project initialized
-- [ ] Frontend UI
-- [ ] Backend API
+- [x] Frontend UI
+- [x] Backend API
 - [ ] PostgreSQL
-- [ ] Frontend ↔ Backend integration
+- [x] Frontend ↔ Backend integration
 - [ ] Tests
 - [ ] Deployment
 - [ ] Documentation
