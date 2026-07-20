@@ -21,7 +21,10 @@ uvicorn app.main:app --reload
 ```
 
 - `GET /health` → `{"status": "ok"}`
-- `GET /api/tasks`, `POST /api/tasks` → `501 Not Implemented` (CRUD not implemented yet)
+- `GET /api/tasks` → list all tasks, sorted by `created_at` descending
+- `POST /api/tasks` → create a task (`title`, `priority`)
+- `PATCH /api/tasks/{id}` → partially update a task (`title`/`completed`/`priority`); `404` if missing
+- `DELETE /api/tasks/{id}` → `204 No Content`; `404` if missing
 
 ## Database
 
