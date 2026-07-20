@@ -3,6 +3,43 @@ import TaskFilters from "@/components/task/TaskFilters";
 import TaskSort from "@/components/task/TaskSort";
 import TaskList from "@/components/task/TaskList";
 import TaskForm from "@/components/task/TaskForm";
+import type { Task } from "@/types/task";
+
+// Temporary static data for Sprint 2 (static rendering only). Will be replaced by real data fetching in the next sprint.
+const tasks: Task[] = [
+  {
+    id: "1",
+    title: "Set up project repository",
+    completed: true,
+    priority: 2,
+    createdAt: "2026-07-18T09:00:00.000Z",
+    updatedAt: "2026-07-18T09:00:00.000Z",
+  },
+  {
+    id: "2",
+    title: "Design database schema",
+    completed: false,
+    priority: 6,
+    createdAt: "2026-07-19T10:30:00.000Z",
+    updatedAt: "2026-07-19T10:30:00.000Z",
+  },
+  {
+    id: "3",
+    title: "Implement authentication",
+    completed: false,
+    priority: 9,
+    createdAt: "2026-07-19T14:15:00.000Z",
+    updatedAt: "2026-07-19T14:15:00.000Z",
+  },
+  {
+    id: "4",
+    title: "Write unit tests",
+    completed: false,
+    priority: 4,
+    createdAt: "2026-07-20T08:00:00.000Z",
+    updatedAt: "2026-07-20T08:00:00.000Z",
+  },
+];
 
 export default function Home() {
   return (
@@ -23,7 +60,7 @@ export default function Home() {
         </section>
 
         <section aria-label="Tasks">
-          <TaskList />
+          <TaskList tasks={tasks} />
         </section>
 
         <section aria-label="Add a new task">
