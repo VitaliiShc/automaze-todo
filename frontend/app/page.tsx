@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import TaskSearch from "@/components/task/TaskSearch";
 import TaskFilters from "@/components/task/TaskFilters";
 import TaskSort from "@/components/task/TaskSort";
 import TaskList from "@/components/task/TaskList";
 import TaskForm from "@/components/task/TaskForm";
-import type { Priority, Task } from "@/types/task";
+import type { Priority, SortOrder, StatusFilter, Task } from "@/types/task";
 
 // Seed data for local state. Will be replaced by real data fetching in a future sprint.
 const initialTasks: Task[] = [
@@ -46,6 +46,26 @@ const initialTasks: Task[] = [
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+
+  const visibleTasks = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    const filtered = tasks.filter((task) => {
+      const matchesSearch = task.title.toLowerCase().includes(query);
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "done" ? task.completed : !task.completed);
+
+      return matchesSearch && matchesStatus;
+    });
+
+    return filtered.sort((a, b) =>
+      sortOrder === "asc" ? a.priority - b.priority : b.priority - a.priority,
+    );
+  }, [tasks, search, statusFilter, sortOrder]);
 
   function handleAddTask(title: string, priority: Priority) {
     const now = new Date().toISOString();
@@ -85,16 +105,16 @@ export default function Home() {
         </header>
 
         <section aria-label="Search and filters" className="flex flex-col gap-4">
-          <TaskSearch />
+          <TaskSearch value={search} onChange={setSearch} />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <TaskFilters />
-            <TaskSort />
+            <TaskFilters value={statusFilter} onChange={setStatusFilter} />
+            <TaskSort value={sortOrder} onChange={setSortOrder} />
           </div>
         </section>
 
         <section aria-label="Tasks">
           <TaskList
-            tasks={tasks}
+            tasks={visibleTasks}
             onToggleComplete={handleToggleComplete}
             onDelete={handleDeleteTask}
           />

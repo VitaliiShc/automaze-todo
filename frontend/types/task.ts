@@ -8,3 +8,7 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
 }
+
+export type StatusFilter = "all" | "done" | "undone";
+
+export type SortOrder = "asc" | "desc";

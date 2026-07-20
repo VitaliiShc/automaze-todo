@@ -1,4 +1,9 @@
-export default function TaskSearch() {
+type TaskSearchProps = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
+export default function TaskSearch({ value, onChange }: TaskSearchProps) {
   return (
     <div>
       <label htmlFor="task-search" className="visually-hidden">
@@ -8,6 +13,8 @@ export default function TaskSearch() {
         id="task-search"
         type="search"
         name="search"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         placeholder="Search tasks…"
         className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
       />
