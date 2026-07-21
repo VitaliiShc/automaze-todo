@@ -6,6 +6,7 @@ from alembic import context
 from app.config import settings
 from app.database.database import Base
 from app.models import task as _task  # noqa: F401  (registers Task on Base.metadata)
+from app.models import user as _user  # noqa: F401  (registers User on Base.metadata)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

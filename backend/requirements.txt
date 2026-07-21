@@ -5,3 +5,5 @@ psycopg[binary]
 pydantic>=2.9
 pydantic-settings>=2.5
 alembic>=1.13
+google-auth>=2.34
+PyJWT>=2.9

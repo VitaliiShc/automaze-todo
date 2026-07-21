@@ -1,15 +1,29 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { GoogleLogin, GoogleOAuthProvider, type CredentialResponse } from '@react-oauth/google';
 import TaskSearch from '@/components/task/TaskSearch';
 import TaskFilters from '@/components/task/TaskFilters';
 import TaskSort from '@/components/task/TaskSort';
 import TaskList from '@/components/task/TaskList';
 import TaskForm from '@/components/task/TaskForm';
-import { createTask, deleteTask, getTasks, updateTask } from '@/lib/api';
+import {
+  clearStoredToken,
+  createTask,
+  deleteTask,
+  getStoredToken,
+  getTasks,
+  loginWithGoogle,
+  storeToken,
+  updateTask,
+} from '@/lib/api';
 import type { Priority, SortOrder, StatusFilter, Task } from '@/types/task';
 
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '';
+
 export default function Home() {
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -17,6 +31,21 @@ export default function Home() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   useEffect(() => {
+    // One-time read of an external store (localStorage) on mount. Kept in an
+    // effect (rather than a lazy useState initializer) so the first client
+    // render still matches the server-rendered "logged out" HTML and avoids
+    // a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAuthToken(getStoredToken());
+    setIsAuthChecked(true);
+  }, []);
+
+  useEffect(() => {
+    if (!authToken) {
+      // Tasks are already cleared explicitly by handleLogout; nothing to fetch.
+      return;
+    }
+
     let isMounted = true;
 
     getTasks()
@@ -30,7 +59,7 @@ export default function Home() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [authToken]);
 
   const visibleTasks = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -72,42 +101,84 @@ export default function Home() {
     await refreshTasks();
   }
 
+  async function handleGoogleSuccess(credentialResponse: CredentialResponse) {
+    if (!credentialResponse.credential) return;
+
+    const { access_token } = await loginWithGoogle(credentialResponse.credential);
+    storeToken(access_token);
+    setAuthToken(access_token);
+  }
+
+  function handleLogout() {
+    clearStoredToken();
+    setAuthToken(null);
+    setTasks([]);
+  }
+
   return (
-    <main className="flex flex-1 justify-center bg-gray-50 px-4 py-10 sm:py-16">
-      <div className="flex w-full max-w-175 flex-col gap-8">
-        <header className="text-center">
-          <h1 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
-            TODO App
-          </h1>
-        </header>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <main className="flex flex-1 justify-center bg-gray-50 px-4 py-10 sm:py-16">
+        <div className="flex w-full max-w-175 flex-col gap-8">
+          <header className="text-center">
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+              TODO App
+            </h1>
+          </header>
 
-        <section aria-label="Add a new task">
-          <TaskForm onAddTask={handleAddTask} />
-        </section>
-
-        <section
-          aria-label="Search and filters"
-          className="flex flex-col gap-4"
-        >
-          <TaskSearch value={search} onChange={setSearch} />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <TaskFilters value={statusFilter} onChange={setStatusFilter} />
-            <TaskSort value={sortOrder} onChange={setSortOrder} />
-          </div>
-        </section>
-
-        <section aria-label="Tasks">
-          {isLoading ? (
-            <p className="text-sm text-gray-500">Loading...</p>
-          ) : (
-            <TaskList
-              tasks={visibleTasks}
-              onToggleComplete={handleToggleComplete}
-              onDelete={handleDeleteTask}
-            />
+          {isAuthChecked && (
+            <section aria-label="Authentication" className="flex items-center justify-center gap-3">
+              {authToken ? (
+                <>
+                  <p className="text-sm text-gray-600">Logged in</p>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => console.error('Google login failed')}
+                />
+              )}
+            </section>
           )}
-        </section>
-      </div>
-    </main>
+
+          {authToken && (
+            <>
+              <section aria-label="Add a new task">
+                <TaskForm onAddTask={handleAddTask} />
+              </section>
+
+              <section
+                aria-label="Search and filters"
+                className="flex flex-col gap-4"
+              >
+                <TaskSearch value={search} onChange={setSearch} />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <TaskFilters value={statusFilter} onChange={setStatusFilter} />
+                  <TaskSort value={sortOrder} onChange={setSortOrder} />
+                </div>
+              </section>
+
+              <section aria-label="Tasks">
+                {isLoading ? (
+                  <p className="text-sm text-gray-500">Loading...</p>
+                ) : (
+                  <TaskList
+                    tasks={visibleTasks}
+                    onToggleComplete={handleToggleComplete}
+                    onDelete={handleDeleteTask}
+                  />
+                )}
+              </section>
+            </>
+          )}
+        </div>
+      </main>
+    </GoogleOAuthProvider>
   );
 }

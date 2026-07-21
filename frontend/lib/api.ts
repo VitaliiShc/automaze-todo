@@ -1,6 +1,7 @@
 import type { Priority, Task } from "@/types/task";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const AUTH_TOKEN_KEY = "auth_token";
 
 type ApiTask = {
   id: number;
@@ -17,6 +18,29 @@ type TaskMutableFields = {
   priority: Priority;
 };
 
+type LoginResponse = {
+  access_token: string;
+  token_type: string;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+  };
+};
+
+export function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function storeToken(token: string): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function clearStoredToken(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
 function mapApiTaskToTask(apiTask: ApiTask): Task {
   return {
     id: String(apiTask.id),
@@ -29,9 +53,15 @@ function mapApiTaskToTask(apiTask: ApiTask): Task {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getStoredToken();
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init?.headers,
+    },
   });
 
   if (!response.ok) {
@@ -71,4 +101,11 @@ export async function updateTask(
 
 export async function deleteTask(id: string): Promise<void> {
   await request<void>(`/api/tasks/${id}`, { method: "DELETE" });
+}
+
+export async function loginWithGoogle(idToken: string): Promise<LoginResponse> {
+  return request<LoginResponse>("/api/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ id_token: idToken }),
+  });
 }

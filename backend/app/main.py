@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.routers.auth import router as auth_router
 from app.routers.tasks import router as tasks_router
 
 app = FastAPI(title="Automaze Todo API")
@@ -15,6 +16,7 @@ app.add_middleware(
 )
 
 app.include_router(tasks_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")
