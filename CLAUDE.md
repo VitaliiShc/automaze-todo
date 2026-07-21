@@ -1,5 +1,7 @@
 # Project Instructions
 
+Instructions for AI coding assistants working on this project.
+
 ## Project
 
 Full-stack TODO application.
@@ -73,4 +75,4 @@ Always:
 
 ## Tests
 
-Prefer Playwright for E2E tests.
+If E2E testing is required, prefer Playwright.
