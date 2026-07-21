@@ -4,9 +4,12 @@ from typing import Any
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from google.auth.exceptions import GoogleAuthError
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2 import id_token as google_id_token
+from requests.exceptions import RequestException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -34,6 +37,13 @@ def verify_google_token(token: str) -> dict[str, Any]:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google ID token.",
         ) from exc
+    except (GoogleAuthError, RequestException) as exc:
+        # Network/transport failure while fetching Google's certs — not the
+        # caller's fault, so this must not surface as a raw 500.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google authentication unavailable",
+        ) from exc
 
     return payload
 
@@ -46,8 +56,16 @@ def get_or_create_user(db: Session, google_id: str, email: str, name: str) -> Us
 
     user = User(google_id=google_id, email=email, name=name)
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two near-simultaneous first logins for the same Google account raced;
+        # the other request already inserted the row — fetch it instead of failing.
+        db.rollback()
+        user = db.execute(select(User).where(User.google_id == google_id)).scalar_one()
+    else:
+        db.refresh(user)
+
     return user
 
 

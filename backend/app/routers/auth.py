@@ -2,13 +2,18 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.rate_limit import rate_limit_by_ip
 from app.schemas.auth import GoogleLoginRequest, TokenResponse, UserResponse
 from app.services import auth_service
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# ~5 login attempts per minute per IP — brute-force protection on the one
+# endpoint that requires no authentication yet.
+_login_rate_limit = Depends(rate_limit_by_ip(max_requests=5, window_seconds=60))
 
-@router.post("/google", response_model=TokenResponse)
+
+@router.post("/google", response_model=TokenResponse, dependencies=[_login_rate_limit])
 def login_with_google(
     payload: GoogleLoginRequest, db: Session = Depends(get_db)
 ) -> TokenResponse:

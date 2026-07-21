@@ -4,11 +4,16 @@ from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.models.task import Task
 from app.models.user import User
+from app.rate_limit import rate_limit_by_user
 from app.schemas.task import TaskCreate, TaskResponse, TaskUpdate
 from app.services import task_service
 from app.services.auth_service import get_current_user
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+
+# ~30 mutations per minute per user — keyed by the authenticated user, not IP,
+# since a scripted abuser here already holds a valid token.
+_mutation_rate_limit = Depends(rate_limit_by_user(max_requests=30, window_seconds=60))
 
 
 @router.get("", response_model=list[TaskResponse])
@@ -19,7 +24,12 @@ def list_tasks(
     return task_service.get_tasks(db, current_user.id)
 
 
-@router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=TaskResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[_mutation_rate_limit],
+)
 def create_task(
     task_in: TaskCreate,
     db: Session = Depends(get_db),
@@ -28,7 +38,7 @@ def create_task(
     return task_service.create_task(db, task_in, current_user.id)
 
 
-@router.patch("/{task_id}", response_model=TaskResponse)
+@router.patch("/{task_id}", response_model=TaskResponse, dependencies=[_mutation_rate_limit])
 def update_task(
     task_id: int,
     task_in: TaskUpdate,
@@ -38,7 +48,11 @@ def update_task(
     return task_service.update_task(db, task_id, task_in, current_user.id)
 
 
-@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[_mutation_rate_limit],
+)
 def delete_task(
     task_id: int,
     db: Session = Depends(get_db),

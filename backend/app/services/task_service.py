@@ -1,9 +1,11 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.task import Task
 from app.schemas.task import TaskCreate, TaskUpdate
+
+MAX_TASKS_PER_USER = 500
 
 
 def get_tasks(db: Session, user_id: int) -> list[Task]:
@@ -14,6 +16,16 @@ def get_tasks(db: Session, user_id: int) -> list[Task]:
 
 
 def create_task(db: Session, task_in: TaskCreate, user_id: int) -> Task:
+    task_count = db.execute(
+        select(func.count()).select_from(Task).where(Task.user_id == user_id)
+    ).scalar_one()
+
+    if task_count >= MAX_TASKS_PER_USER:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Maximum number of tasks reached",
+        )
+
     task = Task(title=task_in.title, priority=task_in.priority, completed=False, user_id=user_id)
     db.add(task)
     db.commit()
