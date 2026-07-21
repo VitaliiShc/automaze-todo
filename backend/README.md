@@ -1,6 +1,7 @@
 # Backend
 
-FastAPI backend for the TODO application.
+FastAPI backend for the TODO application, built with SQLAlchemy, Alembic and
+PostgreSQL (SQLite for local development).
 
 ## Setup
 
@@ -28,10 +29,14 @@ uvicorn app.main:app --reload
 
 ## Database
 
-Defaults to a local SQLite file (`DATABASE_URL` in `.env`). Switch to PostgreSQL by changing
-`DATABASE_URL` to a `postgresql+psycopg://...` connection string — no code changes required.
+Local development uses SQLite by default (`DATABASE_URL` in `.env`).
+
+To use PostgreSQL, update `DATABASE_URL` to a
+`postgresql+psycopg://...` connection string. No code changes are required.
 
 ## Migrations
+
+Database schema changes are managed with Alembic.
 
 ```bash
 alembic revision --autogenerate -m "description"
@@ -41,6 +46,14 @@ alembic upgrade head
 ## Checks
 
 ```bash
-mypy app
-ruff check app alembic
+python -m mypy app
+python -m ruff check app alembic
 ```
+
+## Deployment
+
+Production deployment uses:
+
+- Render Web Service
+- Render PostgreSQL
+- Alembic migrations applied automatically on startup

@@ -1,8 +1,20 @@
 # Automaze Todo
 
 Full-stack TODO application: a clean, responsive task manager with search, status
-filtering, priority sorting, and a real backend backed by SQLite (switchable to
-PostgreSQL via an environment variable).
+filtering, priority sorting, and a FastAPI backend powered by PostgreSQL in
+production and SQLite for local development.
+
+## Live Demo
+
+- Frontend: <https://vitalishc-automaze-todo.vercel.app/>
+- Backend API (Swagger): <https://automaze-backend.onrender.com/docs>
+- Health check: <https://automaze-backend.onrender.com/health>
+
+## Architecture
+
+- Frontend: Next.js (Vercel)
+- Backend: FastAPI (Render)
+- Database: PostgreSQL (Render)
 
 ## Tech stack
 
@@ -19,7 +31,8 @@ PostgreSQL via an environment variable).
 - SQLAlchemy 2.x (`Mapped`/`mapped_column` style)
 - Pydantic v2
 - Alembic (migrations)
-- SQLite (dev) — switchable to PostgreSQL
+- PostgreSQL (production)
+- SQLite (local development)
 
 ## Project structure
 
@@ -63,7 +76,7 @@ pip install -r requirements-dev.txt
 cp .env.example .env
 
 alembic upgrade head         # creates the SQLite database (app.db) and the tasks table
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload
 ```
 
 Backend runs at `http://localhost:8000`. `GET /health` should return `{"status": "ok"}`.
@@ -84,15 +97,15 @@ Frontend runs at `http://localhost:3000` and talks to the backend via `NEXT_PUBL
 
 ### `backend/.env` (see `backend/.env.example`)
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | `sqlite:///./app.db` | SQLAlchemy connection string. Change to `postgresql+psycopg://user:pass@host/db` to switch to PostgreSQL — no code changes needed. |
-| `CORS_ORIGINS` | `["http://localhost:3000"]` | JSON array of origins allowed to call the API. |
+| Variable       | Default                     | Purpose                                                                                                                            |
+| -------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL` | `sqlite:///./app.db`        | SQLAlchemy connection string. Change to `postgresql+psycopg://user:pass@host/db` to switch to PostgreSQL — no code changes needed. |
+| `CORS_ORIGINS` | `["http://localhost:3000"]` | JSON array of origins allowed to call the API.                                                                                     |
 
 ### `frontend/.env.local` (see `frontend/.env.example`)
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
+| Variable              | Default                 | Purpose                                                                                          |
+| --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Base URL the frontend uses for all API calls (`frontend/lib/api.ts`). Never hardcoded in source. |
 
 ## Database & migrations (backend)
@@ -128,13 +141,13 @@ cd backend
 
 ## API
 
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/health` | Health check → `{"status": "ok"}` |
-| `GET` | `/api/tasks` | List all tasks, sorted by `created_at` descending |
-| `POST` | `/api/tasks` | Create a task (`title`, `priority`) |
-| `PATCH` | `/api/tasks/{id}` | Partially update a task (`title`/`completed`/`priority`) |
-| `DELETE` | `/api/tasks/{id}` | Delete a task → `204 No Content` |
+| Method   | Path              | Description                                              |
+| -------- | ----------------- | -------------------------------------------------------- |
+| `GET`    | `/health`         | Health check → `{"status": "ok"}`                        |
+| `GET`    | `/api/tasks`      | List all tasks, sorted by `created_at` descending        |
+| `POST`   | `/api/tasks`      | Create a task (`title`, `priority`)                      |
+| `PATCH`  | `/api/tasks/{id}` | Partially update a task (`title`/`completed`/`priority`) |
+| `DELETE` | `/api/tasks/{id}` | Delete a task → `204 No Content`                         |
 
 ## Features
 
@@ -144,3 +157,15 @@ cd backend
 - Filter by status (all / done / undone)
 - Assign priority (1–10, color-coded badge)
 - Sort by priority (ascending / descending)
+
+## Deployment
+
+- Frontend: Vercel
+- Backend: Render
+- Database: Render PostgreSQL
+
+The backend automatically applies database migrations during startup:
+
+```bash
+alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```

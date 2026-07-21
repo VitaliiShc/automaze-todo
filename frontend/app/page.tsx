@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import TaskSearch from "@/components/task/TaskSearch";
-import TaskFilters from "@/components/task/TaskFilters";
-import TaskSort from "@/components/task/TaskSort";
-import TaskList from "@/components/task/TaskList";
-import TaskForm from "@/components/task/TaskForm";
-import { createTask, deleteTask, getTasks, updateTask } from "@/lib/api";
-import type { Priority, SortOrder, StatusFilter, Task } from "@/types/task";
+import { useEffect, useMemo, useState } from 'react';
+import TaskSearch from '@/components/task/TaskSearch';
+import TaskFilters from '@/components/task/TaskFilters';
+import TaskSort from '@/components/task/TaskSort';
+import TaskList from '@/components/task/TaskList';
+import TaskForm from '@/components/task/TaskForm';
+import { createTask, deleteTask, getTasks, updateTask } from '@/lib/api';
+import type { Priority, SortOrder, StatusFilter, Task } from '@/types/task';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   useEffect(() => {
     let isMounted = true;
@@ -38,14 +38,14 @@ export default function Home() {
     const filtered = tasks.filter((task) => {
       const matchesSearch = task.title.toLowerCase().includes(query);
       const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "done" ? task.completed : !task.completed);
+        statusFilter === 'all' ||
+        (statusFilter === 'done' ? task.completed : !task.completed);
 
       return matchesSearch && matchesStatus;
     });
 
     return filtered.sort((a, b) =>
-      sortOrder === "asc" ? a.priority - b.priority : b.priority - a.priority,
+      sortOrder === 'asc' ? a.priority - b.priority : b.priority - a.priority,
     );
   }, [tasks, search, statusFilter, sortOrder]);
 
@@ -81,7 +81,14 @@ export default function Home() {
           </h1>
         </header>
 
-        <section aria-label="Search and filters" className="flex flex-col gap-4">
+        <section aria-label="Add a new task">
+          <TaskForm onAddTask={handleAddTask} />
+        </section>
+
+        <section
+          aria-label="Search and filters"
+          className="flex flex-col gap-4"
+        >
           <TaskSearch value={search} onChange={setSearch} />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <TaskFilters value={statusFilter} onChange={setStatusFilter} />
@@ -99,10 +106,6 @@ export default function Home() {
               onDelete={handleDeleteTask}
             />
           )}
-        </section>
-
-        <section aria-label="Add a new task">
-          <TaskForm onAddTask={handleAddTask} />
         </section>
       </div>
     </main>
